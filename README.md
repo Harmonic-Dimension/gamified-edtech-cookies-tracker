@@ -21,6 +21,9 @@ but adding another site is a small, documented change.
 > and interpretation are kept in separate sections everywhere — in the
 > dashboard, in the report and in the export. See
 > [`docs/METHODOLOGY.md`](docs/METHODOLOGY.md).
+> The tool was built by running the prompt ['ONE_SHOT_PROMPT.md'](ONE_SHOT_PROMPT.md) 
+> in Claude Code (Opus 5 High). I have not reviewed the code personally.
+> Use at your own risk.
 
 ---
 
