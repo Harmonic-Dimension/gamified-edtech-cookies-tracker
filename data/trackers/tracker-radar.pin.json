@@ -1,0 +1,7 @@
+{
+  "repository": "duckduckgo/tracker-radar",
+  "commit": "a736b501227797f47ac46d15a3da4b0aabac9157",
+  "file": "build-data/generated/domain_map.json",
+  "license": "Tracker Radar is published by DuckDuckGo under CC BY-NC-SA 4.0; see the upstream repository for terms.",
+  "note": "Pinned to an exact commit so that a fresh checkout reproduces the same classification. Change this file deliberately, and re-run `npm run trackers:update`."
+}

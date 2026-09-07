@@ -1,0 +1,491 @@
+{
+ "name": "audit-adtech-list",
+ "version": "1.0.0",
+ "description": "Hand-curated list of advertising, ad-technology, identity-sync, analytics and consent-management domains, maintained inside this repository. It is NOT an authoritative industry dataset: it exists so that 'advertising-related' can be reported with an explicit, inspectable source even when the DuckDuckGo Tracker Radar dataset is not available. Every claim derived from it must be attributed to 'audit-adtech-list v1.0.0'.",
+ "curatedAt": "2026-09-06",
+ "advertisingCategories": [
+  "advertising_exchange",
+  "ad_technology_service",
+  "identity_sync",
+  "social_advertising"
+ ],
+ "domains": {
+  "2mdn.net": [
+   "ad_technology_service"
+  ],
+  "33across.com": [
+   "advertising_exchange"
+  ],
+  "360yield.com": [
+   "advertising_exchange"
+  ],
+  "ad-delivery.net": [
+   "advertising_exchange"
+  ],
+  "adform.net": [
+   "advertising_exchange"
+  ],
+  "adformdsp.net": [
+   "advertising_exchange"
+  ],
+  "adhese.com": [
+   "advertising_exchange"
+  ],
+  "adhese.net": [
+   "advertising_exchange"
+  ],
+  "adition.com": [
+   "advertising_exchange"
+  ],
+  "adkernel.com": [
+   "advertising_exchange"
+  ],
+  "adligature.com": [
+   "advertising_exchange"
+  ],
+  "admanmedia.com": [
+   "advertising_exchange"
+  ],
+  "adnxs-simple.com": [
+   "advertising_exchange"
+  ],
+  "adnxs.com": [
+   "advertising_exchange"
+  ],
+  "adplus.io": [
+   "advertising_exchange"
+  ],
+  "ads-twitter.com": [
+   "social_advertising"
+  ],
+  "adsafeprotected.com": [
+   "ad_technology_service"
+  ],
+  "adsco.re": [
+   "ad_technology_service"
+  ],
+  "adsrvr.org": [
+   "advertising_exchange"
+  ],
+  "adsymptotic.com": [
+   "identity_sync"
+  ],
+  "adtrue.com": [
+   "advertising_exchange"
+  ],
+  "adyoulike.com": [
+   "advertising_exchange"
+  ],
+  "adzz.com": [
+   "advertising_exchange"
+  ],
+  "agkn.com": [
+   "identity_sync"
+  ],
+  "amazon-adsystem.com": [
+   "advertising_exchange"
+  ],
+  "amplitude.com": [
+   "analytics_measurement"
+  ],
+  "analytics.google.com": [
+   "analytics_measurement"
+  ],
+  "analytics.tiktok.com": [
+   "social_advertising"
+  ],
+  "aniview.com": [
+   "ad_technology_service"
+  ],
+  "ayads.co": [
+   "advertising_exchange"
+  ],
+  "azerion.com": [
+   "advertising_exchange"
+  ],
+  "bidswitch.net": [
+   "advertising_exchange"
+  ],
+  "bluebillywig.com": [
+   "advertising_exchange"
+  ],
+  "browsiprod.com": [
+   "ad_technology_service"
+  ],
+  "bttrack.com": [
+   "identity_sync"
+  ],
+  "casalemedia.com": [
+   "advertising_exchange"
+  ],
+  "chartbeat.com": [
+   "analytics_measurement"
+  ],
+  "clarity.ms": [
+   "analytics_measurement"
+  ],
+  "cleverpush.com": [
+   "push_messaging"
+  ],
+  "clickio.com": [
+   "ad_technology_service"
+  ],
+  "confiant-integrations.net": [
+   "ad_technology_service"
+  ],
+  "connectad.io": [
+   "advertising_exchange"
+  ],
+  "consentmanager.net": [
+   "consent_management"
+  ],
+  "cookiebot.com": [
+   "consent_management"
+  ],
+  "cookielaw.org": [
+   "consent_management"
+  ],
+  "cootlogix.com": [
+   "ad_technology_service"
+  ],
+  "criteo.com": [
+   "advertising_exchange"
+  ],
+  "criteo.net": [
+   "advertising_exchange"
+  ],
+  "crwdcntrl.net": [
+   "identity_sync"
+  ],
+  "cxense.com": [
+   "analytics_measurement"
+  ],
+  "demdex.net": [
+   "identity_sync"
+  ],
+  "didomi.io": [
+   "consent_management"
+  ],
+  "districtm.io": [
+   "advertising_exchange"
+  ],
+  "dotomi.com": [
+   "advertising_exchange"
+  ],
+  "doubleclick.net": [
+   "advertising_exchange"
+  ],
+  "doubleverify.com": [
+   "ad_technology_service"
+  ],
+  "emxdgt.com": [
+   "advertising_exchange"
+  ],
+  "everesttech.net": [
+   "identity_sync"
+  ],
+  "eyeota.net": [
+   "identity_sync"
+  ],
+  "facebook.com": [
+   "social_advertising"
+  ],
+  "facebook.net": [
+   "social_advertising"
+  ],
+  "fbcdn.net": [
+   "social_advertising"
+  ],
+  "flashtalking.com": [
+   "ad_technology_service"
+  ],
+  "gammassp.com": [
+   "advertising_exchange"
+  ],
+  "google-analytics.com": [
+   "analytics_measurement"
+  ],
+  "googlesyndication.com": [
+   "advertising_exchange"
+  ],
+  "googletagmanager.com": [
+   "ad_technology_service"
+  ],
+  "googletagservices.com": [
+   "advertising_exchange"
+  ],
+  "gumgum.com": [
+   "advertising_exchange"
+  ],
+  "hotjar.com": [
+   "analytics_measurement"
+  ],
+  "hotjar.io": [
+   "analytics_measurement"
+  ],
+  "id5-sync.com": [
+   "identity_sync"
+  ],
+  "idsync.rlcdn.com": [
+   "identity_sync"
+  ],
+  "improvedigital.com": [
+   "advertising_exchange"
+  ],
+  "indexww.com": [
+   "advertising_exchange"
+  ],
+  "instagram.com": [
+   "social_advertising"
+  ],
+  "krxd.net": [
+   "identity_sync"
+  ],
+  "licdn.com": [
+   "social_advertising"
+  ],
+  "lijit.com": [
+   "advertising_exchange"
+  ],
+  "linkedin.com": [
+   "social_advertising"
+  ],
+  "liveramp.com": [
+   "identity_sync"
+  ],
+  "loopme.me": [
+   "advertising_exchange"
+  ],
+  "magnite.com": [
+   "advertising_exchange"
+  ],
+  "mathtag.com": [
+   "advertising_exchange"
+  ],
+  "matomo.cloud": [
+   "analytics_measurement"
+  ],
+  "mc.yandex.ru": [
+   "analytics_measurement"
+  ],
+  "media.net": [
+   "advertising_exchange"
+  ],
+  "mixpanel.com": [
+   "analytics_measurement"
+  ],
+  "moatads.com": [
+   "ad_technology_service"
+  ],
+  "nativo.com": [
+   "advertising_exchange"
+  ],
+  "newrelic.com": [
+   "analytics_measurement"
+  ],
+  "onesignal.com": [
+   "push_messaging"
+  ],
+  "onetag-sys.com": [
+   "advertising_exchange"
+  ],
+  "onetrust.com": [
+   "consent_management"
+  ],
+  "openx.com": [
+   "identity_sync"
+  ],
+  "openx.net": [
+   "advertising_exchange"
+  ],
+  "optad360.io": [
+   "advertising_exchange"
+  ],
+  "optimera.io": [
+   "ad_technology_service"
+  ],
+  "outbrain.com": [
+   "advertising_exchange"
+  ],
+  "parsely.com": [
+   "analytics_measurement"
+  ],
+  "pinimg.com": [
+   "social_advertising"
+  ],
+  "pinterest.com": [
+   "social_advertising"
+  ],
+  "pippio.com": [
+   "identity_sync"
+  ],
+  "plausible.io": [
+   "analytics_measurement"
+  ],
+  "prebid.org": [
+   "ad_technology_service"
+  ],
+  "pubmatic.com": [
+   "advertising_exchange"
+  ],
+  "pubnative.net": [
+   "advertising_exchange"
+  ],
+  "pubx.ai": [
+   "advertising_exchange"
+  ],
+  "pushengage.com": [
+   "push_messaging"
+  ],
+  "pushwoosh.com": [
+   "push_messaging"
+  ],
+  "quantcast.mgr.consensu.org": [
+   "consent_management"
+  ],
+  "quantcount.com": [
+   "analytics_measurement"
+  ],
+  "quantserve.com": [
+   "analytics_measurement"
+  ],
+  "refinery89.com": [
+   "advertising_exchange"
+  ],
+  "richaudience.com": [
+   "advertising_exchange"
+  ],
+  "rlcdn.com": [
+   "identity_sync"
+  ],
+  "rubiconproject.com": [
+   "advertising_exchange"
+  ],
+  "sascdn.com": [
+   "advertising_exchange"
+  ],
+  "sc-static.net": [
+   "social_advertising"
+  ],
+  "scorecardresearch.com": [
+   "analytics_measurement"
+  ],
+  "seedtag.com": [
+   "advertising_exchange"
+  ],
+  "segment.com": [
+   "analytics_measurement"
+  ],
+  "segment.io": [
+   "analytics_measurement"
+  ],
+  "semasio.net": [
+   "identity_sync"
+  ],
+  "serving-sys.com": [
+   "ad_technology_service"
+  ],
+  "sharethrough.com": [
+   "advertising_exchange"
+  ],
+  "sirdata.com": [
+   "consent_management"
+  ],
+  "smaato.net": [
+   "advertising_exchange"
+  ],
+  "smartadserver.com": [
+   "advertising_exchange"
+  ],
+  "snapchat.com": [
+   "social_advertising"
+  ],
+  "snigelweb.com": [
+   "advertising_exchange"
+  ],
+  "sourcepoint.mgr.consensu.org": [
+   "consent_management"
+  ],
+  "sovrn.com": [
+   "advertising_exchange"
+  ],
+  "spotx.tv": [
+   "identity_sync"
+  ],
+  "spotxchange.com": [
+   "identity_sync"
+  ],
+  "statcounter.com": [
+   "analytics_measurement"
+  ],
+  "stroeerdigitalgroup.de": [
+   "advertising_exchange"
+  ],
+  "sunmedia.tv": [
+   "advertising_exchange"
+  ],
+  "sync.search.spotxchange.com": [
+   "identity_sync"
+  ],
+  "t.co": [
+   "social_advertising"
+  ],
+  "taboola.com": [
+   "advertising_exchange"
+  ],
+  "tapad.com": [
+   "identity_sync"
+  ],
+  "teads.com": [
+   "advertising_exchange"
+  ],
+  "teads.tv": [
+   "advertising_exchange"
+  ],
+  "tiktok.com": [
+   "social_advertising"
+  ],
+  "tiktokcdn.com": [
+   "social_advertising"
+  ],
+  "tremorhub.com": [
+   "identity_sync"
+  ],
+  "triplelift.com": [
+   "advertising_exchange"
+  ],
+  "twitter.com": [
+   "social_advertising"
+  ],
+  "unrulymedia.com": [
+   "advertising_exchange"
+  ],
+  "usercentrics.eu": [
+   "consent_management"
+  ],
+  "vidoomy.com": [
+   "advertising_exchange"
+  ],
+  "x.com": [
+   "social_advertising"
+  ],
+  "yandex.com": [
+   "analytics_measurement"
+  ],
+  "yandex.ru": [
+   "analytics_measurement"
+  ],
+  "yieldlab.net": [
+   "advertising_exchange"
+  ],
+  "yieldmo.com": [
+   "advertising_exchange"
+  ],
+  "zemanta.com": [
+   "advertising_exchange"
+  ],
+  "zqtk.net": [
+   "identity_sync"
+  ]
+ }
+}

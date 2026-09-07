@@ -1,0 +1,36 @@
+services:
+  audit:
+    build:
+      context: .
+      args:
+        # Must match the playwright version pinned in package.json.
+        PLAYWRIGHT_VERSION: 1.63.0
+    image: edu-privacy-audit:latest
+    init: true
+    # Chromium needs more shared memory than Docker's 64 MB default.
+    shm_size: 2gb
+    ports:
+      - "3000:3000"   # dashboard
+      - "6080:6080"   # noVNC, for interactive (visible browser) sessions
+    volumes:
+      # Evidence is written to the host so it survives container rebuilds and
+      # can be inspected with ordinary tools.
+      - ./data:/app/data
+    environment:
+      PORT: "3000"
+      AUDIT_REPETITIONS: "3"
+      AUDIT_VIEWPORT_WIDTH: "1365"
+      AUDIT_VIEWPORT_HEIGHT: "768"
+      AUDIT_LOCALE: "nl-NL"
+      AUDIT_TIMEZONE: "Europe/Amsterdam"
+      AUDIT_OBSERVE_HOMEPAGE_MS: "15000"
+      AUDIT_OBSERVE_EXERCISE_MS: "35000"
+      AUDIT_HEADLESS: "true"
+      AUDIT_RECORD_TRACE: "true"
+      AUDIT_RECORD_HAR: "true"
+      AUDIT_RECORD_VIDEO: "false"
+      ENABLE_VNC: "1"
+      # Passed through so the report can name the exact source revision even
+      # though .git is not copied into the image.
+      AUDIT_GIT_COMMIT: "${AUDIT_GIT_COMMIT:-}"
+    command: ["npm", "run", "serve"]

@@ -1,0 +1,41 @@
+{
+  "name": "edu-privacy-audit",
+  "version": "1.0.0",
+  "description": "Reproducible privacy, cookie, tracker and advertising audits of educational websites",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "trackers:update": "tsx scripts/fetch-tracker-radar.ts",
+    "serve": "tsx src/server/index.ts",
+    "dev": "tsx watch src/server/index.ts",
+    "audit": "tsx src/cli/audit.ts",
+    "audit:all": "tsx src/cli/audit.ts all",
+    "audit:interactive": "tsx src/cli/audit.ts --interactive",
+    "report": "tsx src/report/pdf.ts",
+    "fixture": "tsx fixtures/site/server.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "private": "true",
+  "type": "module",
+  "dependencies": {
+    "archiver": "8.0.0",
+    "express": "5.2.1",
+    "playwright": "1.63.0",
+    "tldts": "7.4.11",
+    "tsx": "4.23.13"
+  },
+  "devDependencies": {
+    "@types/archiver": "8.0.0",
+    "@types/express": "5.0.6",
+    "@types/node": "26.4.1",
+    "typescript": "7.0.2",
+    "vitest": "5.0.0"
+  }
+}

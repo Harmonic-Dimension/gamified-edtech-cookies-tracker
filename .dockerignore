@@ -1,0 +1,5 @@
+node_modules
+data/audits
+.git
+*.log
+.DS_Store
