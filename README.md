@@ -420,3 +420,11 @@ The tool observes normal page behaviour. It does not log in, does not submit
 personal data, does not click advertisements, does not simulate ad clicks, does
 not attempt to influence ad auctions, and does not bypass consent mechanisms or
 ad-technology protections. Requests are spaced by a politeness delay.
+
+## License
+
+MIT — see [LICENSE](LICENSE). You may use, modify and redistribute this,
+including commercially, as long as the copyright notice and licence text stay
+with it. The software is provided "as is", with no warranty and no liability
+on the part of the authors, and nothing in it constitutes legal advice or a
+finding of unlawfulness.
