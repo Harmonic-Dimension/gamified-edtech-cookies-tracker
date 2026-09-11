@@ -195,6 +195,12 @@ export interface AdSlotBox {
   iframeDomain: string | null;
   /** Perceptual-ish fingerprint of the rendered slot, to detect rotation. */
   screenshotSha256: string | null;
+  /**
+   * Cropped image of this slot, relative to the run directory. Older runs
+   * predate this field; the report falls back to the deterministic file name
+   * that the capture code has always used.
+   */
+  screenshotFile?: string | null;
 }
 
 export interface ScreenshotRecord {

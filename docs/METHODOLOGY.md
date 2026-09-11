@@ -275,6 +275,38 @@ Each detected slot is also captured as a small cropped image and hashed, which
 is how "did the advertisement change during the exercise?" is answered: the
 number of times a slot's rendered pixels changed between checkpoints.
 
+Those crops are also what the report shows. A whole-viewport screenshot answers
+"what did the page look like"; it answers "what was advertised" badly, because on
+a printed page a 728x90 banner is a strip a few millimetres tall. The report
+therefore presents the crops themselves, organised **per slot position** rather
+than per picture, with every distinct image that slot produced across the audit.
+
+Three mechanical rules decide what is shown. None of them is a judgement about
+the picture:
+
+* Boxes below roughly 120x40 px are dropped. They are close buttons and labels,
+  not advertisements.
+* Where nested elements describe one placement (site container -> Google
+  container -> the advertisement's own iframe), the **innermost** box is used.
+  That is the crop that frames the creative rather than the page around it.
+  Note this is the opposite of `distinctVisibleSlots`, which keeps the outermost
+  box because it counts placements rather than framing them.
+* Crops that are byte-different but visually identical are collapsed, using a
+  64-cell average hash of the image (`src/util/png.ts`). This is needed because
+  a slot that was *not* filled still renders — it shows the page behind it — and
+  the page animates by a pixel between checkpoints, producing a new SHA-256 every
+  time. Without this step one unfilled slot appears as fifteen "different
+  advertisements". The perceptual hash affects presentation only; no measured
+  value depends on it.
+
+The report deliberately does **not** try to decide which crops are advertisements
+and which are an empty slot showing the page through it. No recorded signal
+separates a slot that served the same advertisement all audit long from a slot
+that was never filled, and guessing would put a claim in the report that the
+evidence cannot carry. Instead each image is captioned with the slot, the
+condition, the checkpoint and the run, and the section says in as many words that
+an unfilled slot renders the page behind it.
+
 ---
 
 ## 6. Classification of third parties

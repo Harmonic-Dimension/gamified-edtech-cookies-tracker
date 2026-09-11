@@ -64,6 +64,8 @@ export async function streamAuditZip(auditId: string, output: Writable): Promise
 
   const reportPdf = path.join(auditDir(auditId), 'report.pdf');
   if (fs.existsSync(reportPdf)) archive.file(reportPdf, { name: 'audit/report.pdf' });
+  const summaryPdf = path.join(auditDir(auditId), 'publiekssamenvatting.pdf');
+  if (fs.existsSync(summaryPdf)) archive.file(summaryPdf, { name: 'audit/publiekssamenvatting.pdf' });
 
   await archive.finalize();
 }
@@ -136,7 +138,8 @@ competent third party can verify every number in the report independently.
       summary.json         aggregated results per site and consent condition (min / median / max per metric)
       summary.csv          the same aggregation, flattened for spreadsheets
       domains.csv          every third-party domain per site and condition, with classification and presence counts
-      report.pdf           the shareable report, if it was generated before the export
+      report.pdf           the shareable technical report, if it was generated before the export
+      publiekssamenvatting.pdf   the plain-Dutch public summary, if it was generated
       runs/<run-id>/
         metadata.json      run metadata, consent bookkeeping, timeline, screenshots index, failures, metrics
         requests.json      every network request observed in the run

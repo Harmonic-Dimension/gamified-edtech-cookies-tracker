@@ -139,6 +139,7 @@ export async function observeAdSlots(
       iframeSrc: box.iframeSrc ? sanitizeUrl(box.iframeSrc) : null,
       iframeDomain: box.iframeSrc ? registrableDomainOf(box.iframeSrc) : null,
       screenshotSha256: null,
+      screenshotFile: null,
     });
   };
 
@@ -160,8 +161,7 @@ export async function observeAdSlots(
   // Rendered-pixel hash per slot, used to detect creative rotation between
   // checkpoints. Limited to the first few in-viewport slots to keep runs fast.
   if (options.captureSlotImages && options.outDir) {
-    const targets = slots.filter((s) => s.inViewport).slice(0, 8);
-    for (const [index, slot] of targets.entries()) {
+    for (const { slot, index } of slotsWithImages(slots)) {
       try {
         const buffer = await page.screenshot({
           clip: {
@@ -173,10 +173,12 @@ export async function observeAdSlots(
           timeout: 10000,
         });
         slot.screenshotSha256 = sha256(buffer);
-        const file = path.join(options.outDir, `${options.runIdPrefix ?? 'slot'}-${label}-${index}.png`);
-        fs.writeFileSync(file, buffer);
+        const name = slotImageName(options.runIdPrefix ?? 'slot', label, index);
+        fs.writeFileSync(path.join(options.outDir, name), buffer);
+        slot.screenshotFile = path.posix.join('screenshots', name);
       } catch {
         slot.screenshotSha256 = null;
+        slot.screenshotFile = null;
       }
     }
   }
@@ -204,6 +206,30 @@ export async function observeAdSlots(
     visibleAdAreaFraction: viewportAreaPx > 0 ? visibleAdAreaPx / viewportAreaPx : 0,
     error: null,
   };
+}
+
+/** Maximum number of in-viewport slots that get a cropped image per checkpoint. */
+export const MAX_SLOT_IMAGES = 8;
+
+/**
+ * The crop file name is derived from the checkpoint label and the slot's
+ * position in the capture list, and has been stable since the first run. The
+ * report relies on that when reading back evidence recorded before slots
+ * carried their own `screenshotFile`.
+ */
+export function slotImageName(prefix: string, label: string, index: number): string {
+  return `${prefix}-${label}-${index}.png`;
+}
+
+/**
+ * The slots that the capture step above photographs, in the same order and with
+ * the same cut-off, so index N here is index N in the file name.
+ */
+export function slotsWithImages(slots: AdSlotBox[]): Array<{ slot: AdSlotBox; index: number }> {
+  return slots
+    .filter((slot) => slot.inViewport)
+    .slice(0, MAX_SLOT_IMAGES)
+    .map((slot, index) => ({ slot, index }));
 }
 
 export interface Rect {

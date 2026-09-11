@@ -196,6 +196,7 @@ ${jobs.length ? `<div class="card"><h2 style="margin-top:0">Audit jobs</h2>
       <td>${escapeHtml(audit.status)}</td>
       <td class="num">${audit.runIds.length}</td>
       <td><a href="/audits/${escapeHtml(audit.auditId)}/report.pdf">PDF</a> ·
+          <a href="/audits/${escapeHtml(audit.auditId)}/samenvatting.pdf">NL</a> ·
           <a href="/audits/${escapeHtml(audit.auditId)}/export.zip">ZIP</a></td>
     </tr>`,
       )
@@ -264,6 +265,7 @@ export function auditPage(summary: AuditSummary): string {
   </div>
   <p style="margin-top:12px">
     <a class="button" href="/audits/${escapeHtml(audit.auditId)}/report.pdf">Download PDF report</a>
+    <a class="button secondary" href="/audits/${escapeHtml(audit.auditId)}/samenvatting.pdf">Download publiekssamenvatting (NL)</a>
     <a class="button secondary" href="/audits/${escapeHtml(audit.auditId)}/export.zip">Download raw evidence (ZIP)</a>
     <a class="button secondary" href="/audits/${escapeHtml(audit.auditId)}/gallery">Visual ad gallery</a>
   </p>

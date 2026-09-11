@@ -147,6 +147,28 @@ describe('report HTML', () => {
     expect(section).not.toMatch(/violat|unlawful|illegal|breach of|should not|must not/i);
   });
 
+  it('splits the cross-site summary so no table runs off the page', () => {
+    const summary = summarizeAudit(getAudit(auditId)!, listRuns(auditId), classifier);
+    const html = buildReportHtml({ summary, runs: listRuns(auditId), includeScreenshots: false });
+    // Twelve numeric columns do not fit A4; the summary is two tables instead.
+    expect(html).toContain('Network activity');
+    expect(html).toContain('Storage and advertising surface');
+    const widest = [...html.matchAll(/<thead>[\s\S]*?<\/thead>/g)]
+      .map((match) => (match[0].match(/<th[\s>]/g) ?? []).length)
+      .reduce((max, count) => Math.max(max, count), 0);
+    expect(widest).toBeLessThanOrEqual(8);
+  });
+
+  it('names the classification dataset once per table instead of in every row', () => {
+    const summary = summarizeAudit(getAudit(auditId)!, listRuns(auditId), classifier);
+    const html = buildReportHtml({ summary, runs: listRuns(auditId), includeScreenshots: false });
+    expect(html).toContain('<td>Advertising-related</td>');
+    // The long "... according to <dataset>" form would be repeated per row and
+    // pushes the numeric columns off the page.
+    expect(html).not.toContain('Advertising-related according to');
+    expect(html).toContain('are the classifications of');
+  });
+
   it('renders unmeasured values as "not measured" rather than 0', () => {
     const emptyAudit = { ...audit, auditId: 'empty', runIds: [] };
     const summary = summarizeAudit(emptyAudit, [], classifier);

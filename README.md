@@ -138,9 +138,12 @@ src/
   store/store.ts           filesystem result store (plain JSON per run)
   report/
     aggregate.ts           min / median / max, domain presence, reject-vs-accept
-    html.ts                the shareable report
-    pdf.ts                 renders that report to PDF
+    html.ts                the shareable technical report
+    creatives.ts           per-slot ad crops, grouped and de-duplicated for the report
+    summary-nl.ts          plain-Dutch public summary, from the same aggregation
+    pdf.ts                 renders both reports to PDF
     format.ts              shared rendering of "not measured", badges, stats
+  util/png.ts              minimal PNG reader + average hash, to spot look-alike crops
   export/zip.ts            self-describing raw evidence bundle
   server/                  dashboard (Express, server-rendered HTML, no build step)
   cli/audit.ts             command line entry point
@@ -176,7 +179,8 @@ data/audits/<audit-id>/
 | `/audits/<id>/sites/<site>` | Per-site detail: results by condition, variability across runs, third-party domains with classification and presence counts, cookie and storage activity, per-run table |
 | `/runs/<audit>/<run>` | One run: metadata, consent bookkeeping, timeline, screenshots, ad slots, cookies, storage, frames, requests, artifacts, warnings |
 | `/audits/<id>/gallery` | The visual ad gallery, laid out for showing to parents or a school board |
-| `/audits/<id>/report.html` / `report.pdf` | The shareable report |
+| `/audits/<id>/report.html` / `report.pdf` | The shareable technical report |
+| `/audits/<id>/samenvatting.html` / `samenvatting.pdf` | The plain-Dutch public summary |
 | `/audits/<id>/export.zip` | The raw evidence bundle |
 | `/methodology` | `docs/METHODOLOGY.md` |
 
@@ -211,7 +215,11 @@ so a forgotten window cannot hold a browser open forever.
 
 ---
 
-## The PDF report
+## The reports
+
+Two documents are generated from the same aggregation, for two different readers.
+
+### The technical report
 
 ```bash
 npm run report -- <audit-id>
@@ -219,12 +227,39 @@ npm run report -- <audit-id>
 ```
 
 Contents: cover page with audit date and exact software/browser versions;
-method; one comparison table across all four sites; per-site results with
-reject-vs-accept comparison, representative screenshots, major third-party
-domains and their classification, cookie and storage observations; a
-"measurement problems" section; important limitations; and a restrained
-observations section that describes what was measured without asserting legal
-conclusions.
+method; comparison tables across all four sites; per-site results with
+reject-vs-accept comparison, major third-party domains and their classification,
+cookie and storage observations; **what each advertising slot displayed**, as
+crops of the slots themselves; a "measurement problems" section; important
+limitations; and a restrained observations section that describes what was
+measured without asserting legal conclusions.
+
+The advertising section is built from the per-slot crops the audit already
+records. It is organised per slot position and shows every distinct image that
+slot produced, so the report never has to assert that a particular picture is an
+advertisement — an unfilled slot renders the page behind it, and the section says
+so. See METHODOLOGY §5.6 for the three selection rules and why the report
+declines to classify the images.
+
+### The Dutch public summary
+
+```bash
+npm run report -- <audit-id> --nl        # both documents
+npm run report -- <audit-id> --only-nl   # just the summary
+# or the "Download publiekssamenvatting (NL)" button in the dashboard
+```
+
+A plain-Dutch summary for the people who have to act on this work but will not
+read a forty-page measurement report: parents, teachers, a school board. It has
+the headline numbers, a five-term glossary, a selection of the advertisements,
+and a "Wat betekent dit níet" chapter that is part of the argument rather than an
+appendix — with a lay audience the risk is over-reading, not under-reading.
+
+Every number comes from the same aggregation as the technical report, so the two
+cannot drift apart; where they would conflict, the summary says the technical
+report governs. The same tone rules are enforced by tests: no legal conclusion,
+"niet gemeten" never rendered as 0, and the classification dataset named wherever
+a classification is used.
 
 ---
 

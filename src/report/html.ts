@@ -2,10 +2,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { AuditSummary, SiteSummary, ConditionSummary } from './aggregate.js';
 import { CONDITION_LABELS, METRIC_LABELS } from './aggregate.js';
-import type { RunResult } from '../types.js';
+import type { DomainClassification, RunResult } from '../types.js';
 import { escapeHtml, statCell, statValuesList, formatDateTime } from './format.js';
 import { runDir } from '../store/store.js';
 import { TrackerClassifier } from '../trackers/dataset.js';
+import { checkpointLabel, collectCreatives, creativeDataUri } from './creatives.js';
+import type { SiteCreatives, SlotPlacement } from './creatives.js';
 
 /**
  * Builds the shareable PDF report.
@@ -22,6 +24,10 @@ export interface ReportOptions {
   runs: RunResult[];
   includeScreenshots?: boolean;
   maxScreenshotsPerCondition?: number;
+  /** Advertising slots shown per website in the creative gallery. */
+  maxAdSlotsPerSite?: number;
+  /** Distinct images shown per advertising slot. */
+  maxRenderingsPerSlot?: number;
 }
 
 const REPORT_CSS = `
@@ -33,10 +39,21 @@ const REPORT_CSS = `
   h3 { font-size: 11.5pt; margin: 6mm 0 2mm; page-break-after: avoid; }
   h4 { font-size: 10.5pt; margin: 4mm 0 1.5mm; }
   p { margin: 0 0 3mm; }
-  table { width: 100%; border-collapse: collapse; margin: 3mm 0 5mm; font-size: 8.6pt; }
-  th, td { border: 1px solid #ccc; padding: 1.6mm 2mm; text-align: left; vertical-align: top; }
-  th { background: #f0f0f0; font-weight: 600; }
-  td.num, th.num { text-align: right; white-space: nowrap; }
+  table { width: 100%; max-width: 100%; border-collapse: collapse; margin: 3mm 0 5mm; font-size: 8.6pt; table-layout: fixed; }
+  th, td { border: 1px solid #ccc; padding: 1.6mm 1.6mm; text-align: left; vertical-align: top; }
+  /* Data may break mid-token — domain names have no spaces. Headers may not:
+     "Requests" split across two lines reads as a typo, not as a column. */
+  td { overflow-wrap: anywhere; hyphens: auto; }
+  th { background: #f0f0f0; font-weight: 600; overflow-wrap: break-word; }
+  /* Headers wrap; only the values themselves are kept on one line, and even
+     those may break rather than push the table off the page. */
+  td.num, th.num { text-align: right; }
+  td.num { white-space: normal; }
+  td.num .range { white-space: nowrap; }
+  table.metrics { table-layout: auto; }
+  table.dense { font-size: 7.6pt; }
+  table.dense th, table.dense td { padding: 1.1mm 1.2mm; }
+  th.rot { font-size: 7.4pt; line-height: 1.15; }
   .cover { margin-bottom: 12mm; }
   .cover .subtitle { font-size: 12pt; color: #444; }
   .meta { font-size: 9pt; color: #444; }
@@ -46,12 +63,18 @@ const REPORT_CSS = `
   .note { background: #f6f6f2; border-left: 3px solid #999; padding: 3mm 4mm; margin: 3mm 0; font-size: 9.5pt; }
   .caution { background: #fdf3e7; border-left: 3px solid #c07000; }
   .screenshot { border: 1px solid #bbb; width: 100%; margin-bottom: 1.5mm; }
+  /* A slot is drawn at its share of the recorded viewport width, so the page
+     keeps the proportions a visitor saw — but never below 45% of the text
+     column, because an unreadable advertisement is not evidence. */
+  figure.creative { margin: 0 0 3mm; page-break-inside: avoid; }
+  .creative-img { display: block; border: 1px solid #999; width: 100%; }
+  figure.creative figcaption { margin-top: 0.8mm; }
   .shot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
   .shot-caption { font-size: 8pt; color: #444; margin-bottom: 4mm; }
   .page-break { page-break-before: always; }
   ul { margin: 0 0 3mm; padding-left: 5mm; }
   li { margin-bottom: 1mm; }
-  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 8.5pt; }
+  code { font-family: "SFMono-Regular", Consolas, monospace; font-size: 8.5pt; overflow-wrap: anywhere; }
   .badge { font-size: 8pt; padding: 0.5mm 1.5mm; border: 1px solid #999; border-radius: 2px; }
 `;
 
@@ -61,12 +84,25 @@ export function buildReportHtml(options: ReportOptions): string {
   const audit = summary.audit;
   const dataset = audit.trackerDataset;
 
+  // The ad-slot crops are read from disk once and indexed by site, so that each
+  // site section can show what its own slots displayed.
+  const creativesBySite = new Map<string, SiteCreatives>();
+  if (includeScreenshots) {
+    for (const entry of collectCreatives(audit.auditId, runs)) creativesBySite.set(entry.siteId, entry);
+  }
+
   const sections: string[] = [];
   sections.push(coverSection(summary));
   sections.push(methodSection(summary));
   sections.push(summaryTableSection(summary));
   for (const site of summary.sites) {
-    sections.push(siteSection(site, runs, includeScreenshots, options.maxScreenshotsPerCondition ?? 2));
+    sections.push(
+      siteSection(site, runs, includeScreenshots, options.maxScreenshotsPerCondition ?? 1, {
+        creatives: creativesBySite.get(site.siteId),
+        maxSlots: options.maxAdSlotsPerSite ?? 6,
+        maxRenderings: options.maxRenderingsPerSlot ?? 4,
+      }, dataset.name),
+    );
   }
   sections.push(failuresSection(summary));
   sections.push(limitationsSection(dataset.name, dataset.version));
@@ -89,6 +125,7 @@ function coverSection(summary: AuditSummary): string {
   <h1>Privacy and Advertising Audit of Educational Practice Websites</h1>
   <p class="subtitle">Technical measurement report — objective observations, separated from interpretation</p>
   <table>
+    <colgroup><col style="width:30%"><col style="width:70%"></colgroup>
     <tr><th>Audit identifier</th><td><code>${escapeHtml(audit.auditId)}</code></td></tr>
     <tr><th>Audit label</th><td>${escapeHtml(audit.label)}</td></tr>
     <tr><th>Measurement period</th><td>${formatDateTime(audit.startedAt)} — ${formatDateTime(audit.finishedAt)}</td></tr>
@@ -125,6 +162,7 @@ function methodSection(summary: AuditSummary): string {
   behaves according to one of three consent conditions.
 </p>
 <table>
+  <colgroup><col style="width:22%"><col style="width:78%"></colgroup>
   <tr><th>A. No consent choice</th><td>The page is opened and the consent dialog is deliberately not touched. The page is observed for ${Math.round(c.observeHomepageMs / 1000)} seconds.</td></tr>
   <tr><th>B. Reject all</th><td>The site's own "reject all" option is used. On these sites that requires opening the settings layer of the consent dialog first, because the first layer offers only "accept all" and "settings". The session then continues into an actual exercise and stays there for about ${Math.round(c.observeExerciseMs / 1000)} seconds.</td></tr>
   <tr><th>C. Accept all</th><td>The site's "accept all" option is used, followed by the same exercise flow as condition B.</td></tr>
@@ -170,42 +208,77 @@ function methodSection(summary: AuditSummary): string {
 </p>`;
 }
 
+/**
+ * The cross-site summary, as two tables rather than one.
+ *
+ * Twelve numeric columns do not fit an A4 page at a legible size, and a table
+ * that runs off the edge of the paper loses the reader the numbers entirely.
+ * Splitting it along the obvious seam — what the browser fetched, and what was
+ * then stored or shown — keeps every column readable and costs nothing, because
+ * the two halves share the same row for each site and condition.
+ */
 function summaryTableSection(summary: AuditSummary): string {
-  const rows: string[] = [];
-  for (const site of summary.sites) {
-    for (const condition of site.conditions) {
-      const usable = condition.usableRunCount;
-      rows.push(`
-<tr>
+  const identity = (site: SiteSummary, condition: ConditionSummary) => `
   <td>${escapeHtml(site.siteName)}</td>
   <td>${escapeHtml(CONDITION_LABELS[condition.condition])}</td>
-  <td class="num">${usable}/${condition.runCount}</td>
+  <td class="num">${condition.usableRunCount}/${condition.runCount}</td>`;
+
+  const trafficRows: string[] = [];
+  const storageRows: string[] = [];
+  for (const site of summary.sites) {
+    for (const condition of site.conditions) {
+      trafficRows.push(`
+<tr>${identity(site, condition)}
   <td class="num">${statCell(condition.metrics.totalRequests)}</td>
   <td class="num">${statCell(condition.metrics.thirdPartyRequests)}</td>
   <td class="num">${statCell(condition.metrics.uniqueThirdPartyDomains)}</td>
   <td class="num">${statCell(condition.metrics.knownTrackerDomains)}</td>
   <td class="num">${statCell(condition.metrics.advertisingDomains)}</td>
+</tr>`);
+      storageRows.push(`
+<tr>${identity(site, condition)}
   <td class="num">${statCell(condition.metrics.storedCookies)}</td>
   <td class="num">${statCell(condition.metrics.thirdPartyStoredCookies)}</td>
   <td class="num">${statCell(condition.metrics.blockedSetCookieAttempts)}</td>
+  <td class="num">${statCell(condition.metrics.visibleAdSlots)}</td>
   <td class="num">${statCell(condition.metrics.maxVisibleAdAreaFraction, { percent: true })}</td>
 </tr>`);
     }
   }
+
+  const identityHeader = `
+      <th style="width:19%">Website</th><th style="width:15%">Condition</th><th class="num" style="width:9%">Usable runs</th>`;
+
   return `
 <h2 class="page-break">Summary across all websites</h2>
-<p class="meta">Values are the median across usable runs, with the minimum–maximum range in brackets. "not measured" means the value could not be established in any usable run; it does not mean zero. An asterisk marks metrics that some runs could not measure.</p>
-<table>
+<p class="meta">Values are the median across usable runs, with the minimum–maximum range in brackets. "not measured" means the value could not be established in any usable run; it does not mean zero. An asterisk marks metrics that some runs could not measure. The two tables below describe the same runs: the first what the browser fetched, the second what was stored or shown.</p>
+
+<h3>Network activity</h3>
+<table class="dense">
   <thead>
-    <tr>
-      <th>Website</th><th>Condition</th><th class="num">Usable runs</th>
-      <th class="num">Requests</th><th class="num">3rd-party req.</th><th class="num">3rd-party domains</th>
-      <th class="num">Tracker/ad domains</th><th class="num">Advertising domains</th>
-      <th class="num">Cookies stored</th><th class="num">3rd-party cookies</th><th class="num">Blocked Set-Cookie</th>
-      <th class="num">Ad share of viewport</th>
+    <tr>${identityHeader}
+      <th class="num rot">Requests</th>
+      <th class="num rot">Third-party requests</th>
+      <th class="num rot">Third-party domains</th>
+      <th class="num rot">Tracker / advertising domains</th>
+      <th class="num rot">Advertising domains</th>
     </tr>
   </thead>
-  <tbody>${rows.join('')}</tbody>
+  <tbody>${trafficRows.join('')}</tbody>
+</table>
+
+<h3>Storage and advertising surface</h3>
+<table class="dense">
+  <thead>
+    <tr>${identityHeader}
+      <th class="num rot">Cookies stored</th>
+      <th class="num rot">Third-party cookies</th>
+      <th class="num rot">Set-Cookie blocked by browser</th>
+      <th class="num rot">Visible ad slots</th>
+      <th class="num rot">Ad share of viewport</th>
+    </tr>
+  </thead>
+  <tbody>${storageRows.join('')}</tbody>
 </table>`;
 }
 
@@ -214,6 +287,8 @@ function siteSection(
   runs: RunResult[],
   includeScreenshots: boolean,
   maxScreenshots: number,
+  ads: { creatives?: SiteCreatives; maxSlots: number; maxRenderings: number },
+  datasetName: string,
 ): string {
   const siteRuns = runs.filter((run) => run.siteId === site.siteId);
   const reject = site.conditions.find((c) => c.condition === 'reject_all');
@@ -266,6 +341,7 @@ ${exerciseRouteNote(siteRuns)}
 
 <h3>Objective measurements per consent condition</h3>
 <table>
+  <colgroup><col style="width:40%"><col style="width:20%"><col style="width:20%"><col style="width:20%"></colgroup>
   <thead><tr><th>Metric</th><th class="num">A. No choice</th><th class="num">B. Reject all</th><th class="num">C. Accept all</th></tr></thead>
   <tbody>${metricRows}${adRow}</tbody>
 </table>
@@ -276,14 +352,16 @@ ${exerciseRouteNote(siteRuns)}
 ${consentTable(site)}
 
 <h3>Third-party domains contacted</h3>
-${domainTable(reject, 'B. Reject all')}
-${domainTable(accept, 'C. Accept all')}
+${domainTable(reject, 'B. Reject all', datasetName)}
+${domainTable(accept, 'C. Accept all', datasetName)}
 
 <h3>Cookies and other storage</h3>
 ${cookieNarrative(site)}
 
 <h3>Notable observations</h3>
 ${notableObservations(site, siteRuns)}
+
+${includeScreenshots && ads.creatives ? adSlotGallery(ads.creatives, ads.maxSlots, ads.maxRenderings) : ''}
 
 ${includeScreenshots ? screenshotSection(site, siteRuns, maxScreenshots) : ''}
 `;
@@ -327,13 +405,34 @@ function consentTable(site: SiteSummary): string {
     })
     .join('');
   return `<table>
+    <colgroup><col style="width:22%"><col style="width:38%"><col style="width:25%"><col style="width:15%"></colgroup>
     <thead><tr><th>Condition</th><th>Consent bookkeeping</th><th>Run status</th><th class="num">Exercise reached</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
   <p class="meta">"confirmed" means the consent state was read back from the site's own consent management platform and matched the requested choice. Runs that are not confirmed are excluded from the measurements above where the condition could not be established.</p>`;
 }
 
-function domainTable(condition: ConditionSummary | undefined, title: string): string {
+/**
+ * The dataset name and pinned version are stated once under each table rather
+ * than repeated in all 25 rows: spelled out per row they are longer than the
+ * domain names and crowd the numbers off the page, while saying nothing new.
+ */
+function shortClassification(classification: DomainClassification): string {
+  switch (classification.label) {
+    case 'known_tracker':
+      return 'Known tracker';
+    case 'advertising_related':
+      return 'Advertising-related';
+    case 'unclassified':
+      return 'Unclassified';
+    case 'unknown_dataset_unavailable':
+      return 'No dataset installed';
+    default:
+      return 'Third-party domain';
+  }
+}
+
+function domainTable(condition: ConditionSummary | undefined, title: string, datasetName: string): string {
   if (!condition || !condition.domains.length) {
     return `<h4>${escapeHtml(title)}</h4><p class="meta">No usable runs, so no domain list can be reported for this condition.</p>`;
   }
@@ -343,7 +442,7 @@ function domainTable(condition: ConditionSummary | undefined, title: string): st
       (domain) => `<tr>
       <td><code>${escapeHtml(domain.registrableDomain)}</code></td>
       <td>${escapeHtml(domain.classification.owner ?? '–')}</td>
-      <td>${escapeHtml(TrackerClassifier.labelText(domain.classification))}</td>
+      <td>${escapeHtml(shortClassification(domain.classification))}</td>
       <td class="num">${domain.runsPresent}/${domain.totalRuns}</td>
       <td class="num">${domain.totalRequests}</td>
       <td class="num">${domain.cookieSetAttempts}</td>
@@ -351,12 +450,27 @@ function domainTable(condition: ConditionSummary | undefined, title: string): st
     </tr>`,
     )
     .join('');
+  // Column widths are fixed: domain names and operator names are long and would
+  // otherwise push the numeric columns off the right-hand edge of the page.
   return `<h4>${escapeHtml(title)}</h4>
-  <table>
-    <thead><tr><th>Domain</th><th>Operator (per dataset)</th><th>Classification</th><th class="num">Present in</th><th class="num">Requests</th><th class="num">Set-Cookie attempts</th><th class="num">Blocked</th></tr></thead>
+  <table class="dense">
+    <colgroup>
+      <col style="width:25%"><col style="width:21%"><col style="width:16%">
+      <col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:8%">
+    </colgroup>
+    <thead><tr>
+      <th>Domain</th><th>Operator (per dataset)</th><th>Classification</th>
+      <th class="num">Present in</th><th class="num">Requests</th>
+      <th class="num">Set-Cookie attempts</th><th class="num">Blocked</th>
+    </tr></thead>
     <tbody>${rows}</tbody>
   </table>
-  ${condition.domains.length > 25 ? `<p class="meta">${condition.domains.length - 25} further domains are listed in the raw export.</p>` : ''}`;
+  <p class="meta">
+    "Known tracker" and "Advertising-related" are the classifications of
+    <strong>${escapeHtml(datasetName)}</strong>, pinned to the version named on the cover page.
+    "Unclassified" means the dataset lists no classification for the domain, not that it does nothing.
+    ${condition.domains.length > 25 ? `${condition.domains.length - 25} further domains are listed in the raw export.` : ''}
+  </p>`;
 }
 
 /**
@@ -474,6 +588,95 @@ function cookieNarrative(site: SiteSummary): string {
   <p class="meta">Cookie values themselves are not reproduced anywhere in this report or in the exported evidence; only lengths and hashes are stored.</p>`;
 }
 
+/**
+ * Shows the advertising each slot actually displayed, cropped to the slot.
+ *
+ * A whole-viewport screenshot answers "what did the page look like"; it is a
+ * poor way to answer "what was advertised to the child using it", because the
+ * banner is a strip a few millimetres tall on the printed page. These crops were
+ * recorded by the audit at every checkpoint and are simply being shown.
+ *
+ * Each slot is presented with every distinct image it produced, so the report
+ * never has to assert that a given picture is an advertisement: where a slot was
+ * not filled it rendered the page behind it, and that is visible as such.
+ */
+function adSlotGallery(creatives: SiteCreatives, maxSlots: number, maxRenderings: number): string {
+  const blocks = creatives.placements.slice(0, maxSlots).map((placement) => slotBlock(placement, maxRenderings));
+  if (!blocks.length) {
+    if (!creatives.missingImages) return '';
+    return `<h3>What the advertising slots displayed</h3>
+    <p class="meta">
+      ${creatives.missingImages} advertising-slot ${creatives.missingImages === 1 ? 'image was' : 'images were'}
+      recorded during the runs but could not be located in the evidence directory, so no images can be shown here.
+      This is a gap in the evidence, not an observation that no advertising was displayed.
+    </p>`;
+  }
+
+  const hiddenSlots = Math.max(0, creatives.placements.length - maxSlots);
+  return `
+<h3>What the advertising slots displayed</h3>
+<div class="note caution">
+  These images are crops of the advertising slots themselves, taken from the recorded runs, at the checkpoints
+  named under each image. Advertising is selected per impression and varies by time, location, device and
+  network: these are the advertisements served to this browser on this occasion, not what every visitor sees,
+  and naming them is not a claim about any advertiser. Where a slot was not filled at that moment it rendered
+  the page behind it, so some images show the website rather than an advertisement — that is what was on screen.
+</div>
+${blocks.join('')}
+${hiddenSlots ? `<p class="meta">${hiddenSlots} further advertising ${hiddenSlots === 1 ? 'slot is' : 'slots are'} recorded in the raw evidence bundle but not shown here.</p>` : ''}
+${creatives.skippedTooSmall ? `<p class="meta">${creatives.skippedTooSmall} photographed ${creatives.skippedTooSmall === 1 ? 'element was' : 'elements were'} too small to be an advertisement (close buttons and labels) and are not shown.</p>` : ''}
+${creatives.missingImages ? `<p class="meta">${creatives.missingImages} recorded slot ${creatives.missingImages === 1 ? 'image' : 'images'} could not be located in the evidence directory and ${creatives.missingImages === 1 ? 'is' : 'are'} therefore not shown.</p>` : ''}`;
+}
+
+/**
+ * The width to print a slot at, as a percentage of the text column: its real
+ * share of the browser viewport, floored so that narrow creatives stay legible.
+ */
+function scaledWidthPercent(placement: SlotPlacement): number {
+  const share = placement.viewportWidth > 0 ? (placement.width / placement.viewportWidth) * 100 : 100;
+  return Math.round(Math.min(100, Math.max(45, share)));
+}
+
+function slotBlock(placement: SlotPlacement, maxRenderings: number): string {
+  const shown = placement.renderings.slice(0, maxRenderings);
+  const figures = shown
+    .map((rendering) => {
+      const dataUri = creativeDataUri(rendering.file);
+      if (!dataUri) return '';
+      const checkpoints = [...new Set(rendering.sightings.map((sighting) => sighting.checkpoint))];
+      const runs = new Set(rendering.sightings.map((sighting) => sighting.runId));
+      const conditions = rendering.conditions.map((condition) => CONDITION_LABELS[condition]).join(', ');
+      return `<figure class="creative" style="width:${scaledWidthPercent(placement)}%">
+        <img class="creative-img" src="${dataUri}" alt="Advertising slot ${placement.width}×${placement.height} on ${escapeHtml(placement.siteName)}">
+        <figcaption class="shot-caption">
+          ${escapeHtml(conditions)} · ${escapeHtml(checkpoints.map(checkpointLabel).join('; '))} ·
+          seen in ${runs.size} ${runs.size === 1 ? 'run' : 'runs'} (${rendering.sightings.length} ${rendering.sightings.length === 1 ? 'observation' : 'observations'}) ·
+          image <code>${escapeHtml(rendering.sha256.slice(0, 12))}</code>
+        </figcaption>
+      </figure>`;
+    })
+    .filter(Boolean);
+  if (!figures.length) return '';
+
+  const hidden = placement.renderings.length - shown.length;
+  const distinct = placement.renderings.length;
+  return `
+<h4>Slot of ${placement.width} × ${placement.height} px at (${placement.x}, ${placement.y})</h4>
+<p class="meta">
+  ${distinct === 1 ? 'One image' : `${distinct} different images`} across ${placement.observationCount}
+  ${placement.observationCount === 1 ? 'observation' : 'observations'} in ${placement.runIds.length}
+  ${placement.runIds.length === 1 ? 'run' : 'runs'} ·
+  ${placement.conditions.map((condition) => escapeHtml(CONDITION_LABELS[condition])).join(', ')} ·
+  detected as <code>${escapeHtml(placement.selector)}</code>${
+    placement.framesAdItself
+      ? ' (the advertisement’s own frame)'
+      : ' (the site’s advertising container, so the crop may include page around the advertisement)'
+  }${placement.iframeDomain ? ` · frame served from <code>${escapeHtml(placement.iframeDomain)}</code>` : ''}
+</p>
+${figures.join('')}
+${hidden > 0 ? `<p class="meta">${hidden} further distinct ${hidden === 1 ? 'image' : 'images'} from this slot are in the raw evidence bundle.</p>` : ''}`;
+}
+
 function screenshotSection(site: SiteSummary, runs: RunResult[], maxPerCondition: number): string {
   const blocks: string[] = [];
   for (const condition of site.conditions) {
@@ -557,6 +760,7 @@ function failuresSection(summary: AuditSummary): string {
   measurement must not be read as an absence of activity.
 </p>
 <table>
+  <colgroup><col style="width:26%"><col style="width:22%"><col style="width:14%"><col style="width:38%"></colgroup>
   <thead><tr><th>Website</th><th>Condition</th><th class="num">Unusable runs</th><th>Recorded problems</th></tr></thead>
   <tbody>${rows.join('')}</tbody>
 </table>`;

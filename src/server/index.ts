@@ -5,7 +5,12 @@ import { config, ensureDirs, PROJECT_ROOT } from '../config.js';
 import { SITE_DEFINITIONS, getSiteDefinition } from '../sites/definitions.js';
 import { loadTrackerClassifier } from '../trackers/dataset.js';
 import { summarizeAudit } from '../report/aggregate.js';
-import { generatePdfReport, generateReportHtml } from '../report/pdf.js';
+import {
+  generatePdfReport,
+  generateReportHtml,
+  generatePublicSummaryHtml,
+  generatePublicSummaryPdf,
+} from '../report/pdf.js';
 import { streamAuditZip } from '../export/zip.js';
 import {
   getAudit,
@@ -99,6 +104,7 @@ export function createApp(): express.Express {
           <td>${escapeHtml(audit.status)}</td>
           <td class="num">${audit.runIds.length}</td>
           <td><a href="/audits/${escapeHtml(audit.auditId)}/report.pdf">PDF</a> ·
+              <a href="/audits/${escapeHtml(audit.auditId)}/samenvatting.pdf">NL-samenvatting</a> ·
               <a href="/audits/${escapeHtml(audit.auditId)}/export.zip">ZIP</a></td>
         </tr>`,
       )
@@ -182,6 +188,23 @@ export function createApp(): express.Express {
     try {
       const file = await generatePdfReport(req.params.auditId);
       res.download(file, `privacy-audit-${req.params.auditId.slice(0, 8)}.pdf`);
+    } catch (err) {
+      res.status(500).send(errorPage(String(err)));
+    }
+  });
+
+  app.get('/audits/:auditId/samenvatting.html', async (req, res) => {
+    try {
+      res.send(await generatePublicSummaryHtml(req.params.auditId));
+    } catch (err) {
+      res.status(500).send(errorPage(String(err)));
+    }
+  });
+
+  app.get('/audits/:auditId/samenvatting.pdf', async (req, res) => {
+    try {
+      const file = await generatePublicSummaryPdf(req.params.auditId);
+      res.download(file, `publiekssamenvatting-${req.params.auditId.slice(0, 8)}.pdf`);
     } catch (err) {
       res.status(500).send(errorPage(String(err)));
     }
